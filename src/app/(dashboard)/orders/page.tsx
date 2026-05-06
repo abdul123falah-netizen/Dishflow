@@ -6,9 +6,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { Search, X, Loader2 } from 'lucide-react'
+import { Search, X, Loader2, Printer } from 'lucide-react'
 import { cn, formatCurrency, formatDateTime, getOrderTypeLabel } from '@/lib/utils'
 import { useOrders, useUpdateOrderStatus, useCancelOrder } from '@/lib/hooks/use-orders'
+import { ReceiptModal, type ReceiptData } from '@/components/shared/receipt-modal'
+import { useRestaurant } from '@/lib/context/restaurant-context'
 import type { Order, OrderStatus } from '@/types'
 
 const STATUS_TABS = ['all', 'pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'] as const
@@ -24,11 +26,42 @@ const STATUS_FLOW: Record<string, string> = {
 }
 
 export default function OrdersPage() {
+  const { restaurant } = useRestaurant()
   const [activeTab, setActiveTab] = useState<StatusTab>('all')
   const [search, setSearch] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [showCancelInput, setShowCancelInput] = useState(false)
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null)
+
+  function buildReceiptData(order: Order): ReceiptData {
+    return {
+      restaurantName: restaurant?.name ?? 'Restaurant',
+      restaurantAddress: restaurant?.address ?? null,
+      restaurantPhone: restaurant?.phone ?? null,
+      vatNumber: (restaurant as any)?.vat_number ?? null,
+      currency: restaurant?.currency ?? 'AED',
+      vatRate: Number(order.vat_rate ?? 5),
+      orderNumber: order.order_number,
+      orderType: order.order_type as 'dine_in' | 'takeaway' | 'delivery',
+      tableLabel: order.table ? (order.table as any).table_number : undefined,
+      createdAt: order.created_at,
+      items: (order.items ?? []).map((item: any) => ({
+        item_name: item.item_name,
+        quantity: item.quantity,
+        unit_price: Number(item.unit_price),
+        line_total: Number(item.line_total),
+        variant: item.variants?.[0]?.variant_name,
+        modifiers: item.modifiers?.map((m: any) => m.modifier_name) ?? [],
+      })),
+      subtotal: Number(order.subtotal),
+      vatAmount: Number(order.vat_amount),
+      totalAmount: Number(order.total_amount),
+      paymentMethod: (order as any).payment_method ?? 'card',
+      amountPaid: Number(order.total_amount),
+      change: 0,
+    }
+  }
 
   const { data: orders = [], isLoading } = useOrders({
     status: activeTab === 'all' ? undefined : activeTab as OrderStatus,
@@ -244,6 +277,13 @@ export default function OrdersPage() {
                     }
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => setReceiptOrder(selectedOrder)}
+                >
+                  <Printer className="h-4 w-4" /> Print Receipt
+                </Button>
                 {!['completed', 'cancelled'].includes(selectedOrder.status) && !showCancelInput && (
                   <Button
                     variant="outline"
@@ -262,6 +302,13 @@ export default function OrdersPage() {
           )}
         </div>
       </div>
+
+      {receiptOrder && (
+        <ReceiptModal
+          data={buildReceiptData(receiptOrder)}
+          onClose={() => setReceiptOrder(null)}
+        />
+      )}
     </div>
   )
 }

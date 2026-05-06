@@ -5,6 +5,7 @@ import { MenuPanel } from './menu-panel'
 import { OrderPanel } from './order-panel'
 import { PaymentModal } from './payment-modal'
 import { PosHeader } from './pos-header'
+import { ReceiptModal, type ReceiptData } from '@/components/shared/receipt-modal'
 import { useMenuCategories, useMenuItems } from '@/lib/hooks/use-menu'
 import { useCreateOrder, useRecordPayment } from '@/lib/hooks/use-orders'
 import { useTables } from '@/lib/hooks/use-settings'
@@ -29,6 +30,7 @@ export function PosInterface() {
   const [showPayment, setShowPayment] = useState(false)
   const [orderNote, setOrderNote] = useState('')
   const [lastOrderId, setLastOrderId] = useState<string>('')
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
   const createOrder = useCreateOrder()
   const recordPayment = useRecordPayment()
@@ -164,6 +166,35 @@ export function PosInterface() {
       reference,
     })
 
+    // Build receipt data before clearing cart
+    const change = method === 'cash' ? Math.max(0, amount - totalAmount) : 0
+    setReceiptData({
+      restaurantName: restaurant.name,
+      restaurantAddress: restaurant.address ?? null,
+      restaurantPhone: restaurant.phone ?? null,
+      vatNumber: (restaurant as any).vat_number ?? null,
+      currency: restaurant.currency ?? 'AED',
+      vatRate,
+      orderNumber: `ORD-${orderId.slice(-6).toUpperCase()}`,
+      orderType,
+      tableLabel: selectedTable?.table_number ?? undefined,
+      createdAt: new Date().toISOString(),
+      items: cartItems.map(item => ({
+        item_name: item.item_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        line_total: item.line_total,
+        variant: item.selected_variant?.name,
+        modifiers: item.selected_modifiers.map(m => m.name),
+      })),
+      subtotal,
+      vatAmount,
+      totalAmount,
+      paymentMethod: method,
+      amountPaid: amount,
+      change,
+    })
+
     clearCart()
     setShowPayment(false)
   }
@@ -215,6 +246,13 @@ export function PosInterface() {
           isLoading={createOrder.isPending || recordPayment.isPending}
           onClose={() => setShowPayment(false)}
           onComplete={handlePaymentComplete}
+        />
+      )}
+
+      {receiptData && (
+        <ReceiptModal
+          data={receiptData}
+          onClose={() => setReceiptData(null)}
         />
       )}
     </div>
