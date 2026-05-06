@@ -106,7 +106,7 @@ export default function MenuPage() {
       name: form.name, name_ar: form.name_ar, category_id: form.category_id,
       base_price: parseFloat(form.base_price), description: form.description,
       is_available: form.is_available, is_featured: form.is_featured,
-      image_url: form.image_url || null,
+      image_url: form.image_url || undefined,
     }
     if (editingItem) {
       await updateItem.mutateAsync({ id: editingItem.id, updates: payload })

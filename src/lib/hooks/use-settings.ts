@@ -145,7 +145,8 @@ export function useTableFloor() {
         .in('status', ['confirmed', 'preparing', 'ready'])
         .not('table_id', 'is', null)
 
-      const ordersByTable = new Map<string, typeof activeOrders[number]>()
+      type ActiveOrder = NonNullable<typeof activeOrders>[number]
+      const ordersByTable = new Map<string, ActiveOrder>()
       for (const order of activeOrders ?? []) {
         if (order.table_id) ordersByTable.set(order.table_id, order)
       }

@@ -44,14 +44,14 @@ export function RecentOrders() {
               status: string
               total_amount: number
               created_at: string
-              table?: { table_number: string } | null
+              table?: { table_number: string }[] | { table_number: string } | null
             }) => (
               <div key={order.id} className="flex items-center justify-between px-6 py-3 hover:bg-slate-50">
                 <div>
                   <p className="text-sm font-medium">{order.order_number}</p>
                   <p className="text-xs text-[var(--muted-foreground)]">
                     {getOrderTypeLabel(order.order_type)}
-                    {order.table && ` · ${order.table.table_number}`}
+                    {order.table && ` · ${Array.isArray(order.table) ? order.table[0]?.table_number : order.table.table_number}`}
                     {' · '}{formatTime(order.created_at)}
                   </p>
                 </div>

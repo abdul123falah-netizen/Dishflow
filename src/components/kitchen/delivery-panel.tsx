@@ -77,8 +77,8 @@ export function DeliveryPanel({ onClose }: DeliveryPanelProps) {
     await createOrder.mutateAsync({
       order_type: 'delivery',
       delivery_address: address.trim() || undefined,
-      delivery_notes: `PLATFORM:${p.name}|EXT_ID:${extId.trim()}`,
       notes: [
+        `PLATFORM:${p.name}|EXT_ID:${extId.trim()}`,
         customerName.trim() ? `Customer: ${customerName.trim()}` : '',
         orderNote.trim(),
       ].filter(Boolean).join(' · ') || undefined,
