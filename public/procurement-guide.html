@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dishflow — Procurement Guide</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* ── Download Button (hidden when printing) ── */
+    #download-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #ff6b35, #e84d0e);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(232,77,14,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    #download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(232,77,14,0.5);
+    }
+    #download-btn svg { flex-shrink: 0; }
+
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* ── Cover Page ── */
+    .cover {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      min-height: 100vh;
+      padding: 80px 72px;
+      background: linear-gradient(135deg, #ff6b35 0%, #e84d0e 100%);
+      color: white;
+      page-break-after: always;
+      position: relative;
+      gap: 40px;
+    }
+    .cover-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .cover-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cover-big-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+    .cover-big-logo-ring {
+      width: 280px;
+      height: 280px;
+      border-radius: 56px;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.2);
+      backdrop-filter: blur(4px);
+    }
+    .cover-big-logo-name {
+      font-size: 32px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.5px;
+      opacity: 0.95;
+    }
+    .cover-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 56px;
+    }
+    .cover-logo-text {
+      font-size: 20px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.3px;
+    }
+    .cover-badge {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 99px;
+      padding: 6px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      display: inline-block;
+    }
+    .cover h1 {
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      max-width: 600px;
+    }
+    .cover p {
+      font-size: 18px;
+      opacity: 0.85;
+      max-width: 500px;
+      margin-bottom: 56px;
+      line-height: 1.5;
+    }
+    .cover-meta {
+      display: flex;
+      gap: 40px;
+    }
+    .cover-meta-item { opacity: 0.75; }
+    .cover-meta-item span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .cover-meta-item strong { font-size: 14px; font-weight: 700; }
+
+    /* ── Flow Diagram on Cover ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      margin: 40px 0 48px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .flow-step {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .flow-arrow {
+      font-size: 16px;
+      opacity: 0.5;
+      margin: 0 2px;
+    }
+
+    /* ── TOC ── */
+    .toc-page {
+      padding: 60px 72px;
+      page-break-after: always;
+    }
+    .toc-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 36px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #f5f5f5;
+    }
+    .toc-logo-text { font-size: 14px; font-weight: 800; color: #e84d0e; }
+    .toc-page h2 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #e84d0e;
+      margin-bottom: 28px;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff5f2;
+      color: #e84d0e;
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+    .toc-label { font-size: 14px; font-weight: 600; flex: 1; }
+    .toc-dots { flex: 1; border-bottom: 2px dotted #ddd; margin: 0 12px; }
+    .toc-page-num { font-size: 13px; color: #888; font-weight: 700; }
+
+    /* ── Content Pages ── */
+    .page {
+      padding: 56px 72px;
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: auto; }
+
+    /* ── Page Header (logo on each content page) ── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #f5f5f5;
+    }
+    .page-header-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .page-header-logo-text { font-size: 13px; font-weight: 800; color: #e84d0e; }
+    .page-header-label { font-size: 11px; color: #bbb; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── Section Header ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .section-num {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #ff6b35, #e84d0e);
+      color: white;
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-title h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #111;
+    }
+    .section-title p {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    /* ── Step Cards ── */
+    .steps { display: flex; flex-direction: column; gap: 12px; }
+    .step {
+      display: flex;
+      gap: 14px;
+      background: #fafafa;
+      border: 1px solid #ebebeb;
+      border-radius: 12px;
+      padding: 14px 18px;
+      align-items: flex-start;
+    }
+    .step-icon {
+      width: 30px;
+      height: 30px;
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-content h4 { font-size: 13px; font-weight: 700; color: #111; margin-bottom: 3px; }
+    .step-content p  { font-size: 12px; color: #555; line-height: 1.5; }
+
+    /* ── Info Box ── */
+    .info-box {
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin: 18px 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .info-box.orange { background: #fff5f2; border: 1px solid #ffd4c2; }
+    .info-box.blue   { background: #f0f6ff; border: 1px solid #c2d8ff; }
+    .info-box.green  { background: #f0fff6; border: 1px solid #b8f0d2; }
+    .info-box .icon  { font-size: 18px; flex-shrink: 0; line-height: 1; }
+    .info-box-text strong { font-size: 12px; font-weight: 700; display: block; margin-bottom: 3px; }
+    .info-box-text p { font-size: 12px; color: #555; line-height: 1.5; }
+
+    /* ── Two-Column Layout ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+    .col-card {
+      background: #fafafa;
+      border: 1px solid #ebebeb;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .col-card h4 {
+      font-size: 13px;
+      font-weight: 800;
+      color: #e84d0e;
+      margin-bottom: 10px;
+    }
+    .col-card ul { padding-left: 16px; }
+    .col-card li { font-size: 12px; color: #444; margin-bottom: 7px; line-height: 1.5; }
+
+    /* ── Status Table ── */
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+    thead tr { background: #f5f5f5; }
+    th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #666; }
+    td { padding: 10px 14px; font-size: 12px; border-bottom: 1px solid #f0f0f0; color: #333; }
+    tr:last-child td { border-bottom: none; }
+
+    /* Status Badges */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+    .badge-grey   { background: #f0f0f0; color: #555; }
+    .badge-blue   { background: #e8f0ff; color: #2563eb; }
+    .badge-green  { background: #e6fff3; color: #059669; }
+    .badge-red    { background: #fff0f0; color: #dc2626; }
+    .badge-purple { background: #f5f0ff; color: #7c3aed; }
+    .badge-orange { background: #fff5f0; color: #e84d0e; }
+
+    /* ── Tips Grid ── */
+    .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .tip-card { background: white; border: 1px solid #ebebeb; border-radius: 12px; padding: 16px; border-left: 4px solid #e84d0e; }
+    .tip-card h4 { font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #111; }
+    .tip-card p  { font-size: 11px; color: #666; line-height: 1.5; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: #f0f0f0; margin: 20px 0; }
+
+    /* ── Field Labels ── */
+    .field-list { margin-top: 10px; }
+    .field { display: flex; padding: 9px 0; border-bottom: 1px solid #f5f5f5; gap: 12px; align-items: baseline; }
+    .field-name { font-size: 12px; font-weight: 700; color: #111; min-width: 150px; }
+    .field-req  { font-size: 10px; color: #e84d0e; font-weight: 700; min-width: 55px; }
+    .field-desc { font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+
+<!-- ── Download Button ─────────────────────────────── -->
+<button id="download-btn" onclick="generatePDF()">
+  <svg id="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/>
+    <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+  <span id="btn-label">Download PDF</span>
+</button>
+
+<script>
+  async function generatePDF() {
+    const btn = document.getElementById('download-btn');
+    const label = document.getElementById('btn-label');
+    const icon = document.getElementById('btn-icon');
+
+    // Show loading state
+    btn.disabled = true;
+    label.textContent = 'Generating…';
+    icon.innerHTML = '<circle cx="12" cy="12" r="10" stroke="white" stroke-width="2.5" fill="none" stroke-dasharray="32" stroke-dashoffset="32"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/></circle>';
+
+    // Hide button from PDF
+    btn.style.visibility = 'hidden';
+
+    const options = {
+      margin:      0,
+      filename:    'Dishflow-Procurement-Guide.pdf',
+      image:       { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+      jsPDF:       { unit: 'px', format: 'a4', orientation: 'portrait', hotfixes: ['px_scaling'] },
+      pagebreak:   { mode: ['css', 'legacy'], before: '.page, .toc-page, .cover' }
+    };
+
+    try {
+      await html2pdf().set(options).from(document.body).save();
+    } catch(e) {
+      console.error(e);
+    }
+
+    // Restore button
+    btn.style.visibility = 'visible';
+    btn.disabled = false;
+    label.textContent = 'Download PDF';
+    icon.innerHTML = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>';
+  }
+</script>
+
+<!-- ════════════ COVER ════════════ -->
+<div class="cover">
+
+  <!-- LEFT: text content -->
+  <div class="cover-left">
+    <div class="cover-logo">
+      <svg width="44" height="44" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="rgba(255,255,255,0.25)"/>
+        <text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text>
+        <rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.4"/>
+      </svg>
+      <div class="cover-logo-text">Dishflow</div>
+    </div>
+
+    <div class="cover-badge">Operations Manual</div>
+    <h1>Procurement &amp; Inventory Guide</h1>
+    <p>Everything you need to manage suppliers, purchase orders, and stock levels — step by step.</p>
+
+    <div class="flow">
+      <div class="flow-step">📋 Suppliers</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">📦 Inventory</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">📨 RFQ</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">⭐ Compare</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">🚚 PO</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">✅ Receive</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">📊 Reports</div>
+    </div>
+
+    <div class="cover-meta">
+      <div class="cover-meta-item"><span>Sections</span><strong>8 Steps</strong></div>
+      <div class="cover-meta-item"><span>System</span><strong>Dishflow</strong></div>
+      <div class="cover-meta-item"><span>Version</span><strong>1.0</strong></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: big logo -->
+  <div class="cover-right">
+    <div class="cover-big-logo">
+      <div class="cover-big-logo-ring">
+        <svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="120" y="120"
+            text-anchor="middle"
+            dominant-baseline="central"
+            font-family="system-ui,-apple-system,'Segoe UI',sans-serif"
+            font-weight="800"
+            font-size="148"
+            letter-spacing="-6"
+            fill="white">DF</text>
+        </svg>
+      </div>
+      <div class="cover-big-logo-name">Dishflow</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════ TOC ════════════ -->
+<div class="toc-page">
+  <div class="toc-logo">
+    <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="df-toc" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs>
+      <rect width="40" height="40" rx="10" fill="url(#df-toc)"/>
+      <text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text>
+      <rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/>
+    </svg>
+    <div class="toc-logo-text">Dishflow · Procurement Guide</div>
+  </div>
+
+  <h2>Table of Contents</h2>
+
+  <div class="toc-item"><div class="toc-num">1</div><div class="toc-label">Add Your Suppliers</div><div class="toc-dots"></div><div class="toc-page-num">3</div></div>
+  <div class="toc-item"><div class="toc-num">2</div><div class="toc-label">Set Up Inventory Items</div><div class="toc-dots"></div><div class="toc-page-num">4</div></div>
+  <div class="toc-item"><div class="toc-num">3</div><div class="toc-label">Create a Purchase Order Directly</div><div class="toc-dots"></div><div class="toc-page-num">5</div></div>
+  <div class="toc-item"><div class="toc-num">4</div><div class="toc-label">Use RFQ to Compare Suppliers</div><div class="toc-dots"></div><div class="toc-page-num">6</div></div>
+  <div class="toc-item"><div class="toc-num">5</div><div class="toc-label">Use Templates for Recurring Orders</div><div class="toc-dots"></div><div class="toc-page-num">7</div></div>
+  <div class="toc-item"><div class="toc-num">6</div><div class="toc-label">Receiving a Delivery</div><div class="toc-dots"></div><div class="toc-page-num">8</div></div>
+  <div class="toc-item"><div class="toc-num">7</div><div class="toc-label">Monitor Inventory &amp; Low Stock Alerts</div><div class="toc-dots"></div><div class="toc-page-num">9</div></div>
+  <div class="toc-item"><div class="toc-num">8</div><div class="toc-label">View in Reports</div><div class="toc-dots"></div><div class="toc-page-num">10</div></div>
+  <div class="toc-item"><div class="toc-num">✦</div><div class="toc-label">Status Reference &amp; Tips</div><div class="toc-dots"></div><div class="toc-page-num">11</div></div>
+
+  <div class="info-box orange" style="margin-top:32px;">
+    <div class="icon">💡</div>
+    <div class="info-box-text">
+      <strong>Start Here</strong>
+      <p>Follow the steps in order the first time. Once set up, your daily workflow will simply be: Check Inventory alerts → Create PO (or use a Template) → Receive delivery. That's it.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ STEP 1 ════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-logo">
+      <svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="df-1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#df-1)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg>
+      <div class="page-header-logo-text">Dishflow</div>
+    </div>
+    <div class="page-header-label">Procurement Guide</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div class="section-title"><h2>Add Your Suppliers</h2><p>Sidebar → Suppliers</p></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="step-icon">➊</div><div class="step-content"><h4>Open Suppliers</h4><p>Click <strong>Suppliers</strong> in the left sidebar.</p></div></div>
+    <div class="step"><div class="step-icon">➋</div><div class="step-content"><h4>Click "Add Supplier"</h4><p>Top-right corner of the page.</p></div></div>
+    <div class="step"><div class="step-icon">➌</div><div class="step-content"><h4>Fill in the details</h4><p>At minimum, enter the Company Name. Everything else is optional but recommended.</p></div></div>
+    <div class="step"><div class="step-icon">➍</div><div class="step-content"><h4>Save</h4><p>Click <strong>Add Supplier</strong>. Repeat for all your vendors.</p></div></div>
+  </div>
+
+  <div class="divider"></div>
+  <p style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">Fields Explained</p>
+  <div class="field-list">
+    <div class="field"><div class="field-name">Company Name</div><div class="field-req">Required</div><div class="field-desc">The vendor's trading name, e.g. "Fresh Foods Trading"</div></div>
+    <div class="field"><div class="field-name">Contact Person</div><div class="field-req">Optional</div><div class="field-desc">The sales rep you deal with</div></div>
+    <div class="field"><div class="field-name">Phone / WhatsApp</div><div class="field-req">Optional</div><div class="field-desc">Clickable link on the card — opens dialer</div></div>
+    <div class="field"><div class="field-name">Email</div><div class="field-req">Optional</div><div class="field-desc">Clickable link — opens mail client</div></div>
+    <div class="field"><div class="field-name">Payment Terms</div><div class="field-req">Required</div><div class="field-desc">Cash on Delivery, Net 15, Net 30, Net 45, Net 60, or Prepaid</div></div>
+    <div class="field"><div class="field-name">Notes</div><div class="field-req">Optional</div><div class="field-desc">Delivery days, special conditions, anything you need to remember</div></div>
+  </div>
+
+  <div class="info-box orange" style="margin-top:20px;">
+    <div class="icon">⚠️</div>
+    <div class="info-box-text"><strong>Do this first</strong><p>You must have at least one supplier before you can create Purchase Orders or RFQs. Add all your vendors here before proceeding.</p></div>
+  </div>
+</div>
+
+<!-- ════════════ STEP 2 ════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-logo"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="df-2" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#df-2)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg><div class="page-header-logo-text">Dishflow</div></div>
+    <div class="page-header-label">Procurement Guide</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div class="section-title"><h2>Set Up Inventory Items</h2><p>Sidebar → Inventory</p></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="step-icon">➊</div><div class="step-content"><h4>Open Inventory</h4><p>Click <strong>Inventory</strong> in the left sidebar.</p></div></div>
+    <div class="step"><div class="step-icon">➋</div><div class="step-content"><h4>Click "Add Item"</h4><p>Top-right corner. Fill in the form for each ingredient or supply.</p></div></div>
+    <div class="step"><div class="step-icon">➌</div><div class="step-content"><h4>Set your Alert Below threshold</h4><p>This is the minimum stock level before a warning appears. Set it to about 2–3 days of usage.</p></div></div>
+    <div class="step"><div class="step-icon">➍</div><div class="step-content"><h4>Save the item</h4><p>Click <strong>Add Item</strong>. Repeat for everything you want to track.</p></div></div>
+  </div>
+
+  <div class="divider"></div>
+  <p style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">Fields Explained</p>
+  <div class="field-list">
+    <div class="field"><div class="field-name">Name</div><div class="field-req">Required</div><div class="field-desc">e.g. "Chicken Breast", "Olive Oil", "Takeaway Cups"</div></div>
+    <div class="field"><div class="field-name">Category</div><div class="field-req">Required</div><div class="field-desc">Produce, Meat, Seafood, Dairy, Beverages, Dry Goods, etc.</div></div>
+    <div class="field"><div class="field-name">Unit</div><div class="field-req">Required</div><div class="field-desc">How you measure it — kg, L, pcs, box, bag, bottle, etc.</div></div>
+    <div class="field"><div class="field-name">Current Stock</div><div class="field-req">Required</div><div class="field-desc">How much you have right now</div></div>
+    <div class="field"><div class="field-name">Alert Below</div><div class="field-req">Required</div><div class="field-desc">Minimum level before a low-stock warning is triggered</div></div>
+    <div class="field"><div class="field-name">Cost per Unit</div><div class="field-req">Optional</div><div class="field-desc">Default purchase price — used to calculate total inventory value</div></div>
+  </div>
+
+  <div class="info-box green" style="margin-top:20px;">
+    <div class="icon">✅</div>
+    <div class="info-box-text"><strong>Why linking matters</strong><p>When a Purchase Order is received, stock auto-updates — but only for items linked to inventory. Always pick from the dropdown when building a PO.</p></div>
+  </div>
+</div>
+
+<!-- ════════════ STEP 3 ════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-logo"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="df-3" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#df-3)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg><div class="page-header-logo-text">Dishflow</div></div>
+    <div class="page-header-label">Procurement Guide</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div class="section-title"><h2>Create a Purchase Order Directly</h2><p>Purchases → Purchase Orders tab</p></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="step-icon">➊</div><div class="step-content"><h4>Go to Purchases → Purchase Orders</h4><p>Click <strong>Purchases</strong> in the sidebar, then the <strong>Purchase Orders</strong> tab.</p></div></div>
+    <div class="step"><div class="step-icon">➋</div><div class="step-content"><h4>Click "Create PO"</h4><p>Top-right of the tab.</p></div></div>
+    <div class="step"><div class="step-icon">➌</div><div class="step-content"><h4>Select a Supplier &amp; set the date</h4><p>Pick from the dropdown. Set an expected delivery date if you know it.</p></div></div>
+    <div class="step"><div class="step-icon">➍</div><div class="step-content"><h4>Add line items</h4><p>Pick from the <strong>Inventory Item</strong> dropdown — it auto-fills name, unit, and cost. Enter quantity. Use "Custom" for one-off items not in inventory.</p></div></div>
+    <div class="step"><div class="step-icon">➎</div><div class="step-content"><h4>Click "Create Draft PO"</h4><p>The PO is saved. Review it before marking as Sent.</p></div></div>
+  </div>
+
+  <div class="divider"></div>
+  <p style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px;">Purchase Order Lifecycle</p>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <div style="flex:1; min-width:120px; background:#f9f9f9; border:1px solid #e8e8e8; border-radius:10px; padding:14px;"><span class="badge badge-grey">Draft</span><p style="font-size:11px; color:#555; margin-top:8px; line-height:1.5;">Created, not yet sent. Can still edit or cancel.</p></div>
+    <div style="font-size:20px; color:#ccc; align-self:center;">→</div>
+    <div style="flex:1; min-width:120px; background:#f0f6ff; border:1px solid #c2d8ff; border-radius:10px; padding:14px;"><span class="badge badge-blue">Sent</span><p style="font-size:11px; color:#555; margin-top:8px; line-height:1.5;">Click <strong>Send</strong> after contacting your supplier.</p></div>
+    <div style="font-size:20px; color:#ccc; align-self:center;">→</div>
+    <div style="flex:1; min-width:120px; background:#f0fff6; border:1px solid #b8f0d2; border-radius:10px; padding:14px;"><span class="badge badge-green">Received</span><p style="font-size:11px; color:#555; margin-top:8px; line-height:1.5;">Click <strong>Receive</strong> on delivery. Stock updates automatically.</p></div>
+  </div>
+
+  <div class="info-box blue" style="margin-top:18px;">
+    <div class="icon">ℹ️</div>
+    <div class="info-box-text"><strong>Cancelling a PO</strong><p>Only possible in <strong>Draft</strong> status. Once sent or received, it cannot be cancelled from the system.</p></div>
+  </div>
+</div>
+
+<!-- ════════════ STEP 4 ════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-logo"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="df-4" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#df-4)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg><div class="page-header-logo-text">Dishflow</div></div>
+    <div class="page-header-label">Procurement Guide</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div class="section-title"><h2>Use RFQ to Compare Suppliers</h2><p>Purchases → RFQs tab</p></div>
+  </div>
+
+  <div class="two-col" style="margin-top:0;">
+    <div class="col-card"><h4>📨 Create the RFQ</h4><ul><li>Go to <strong>Purchases → RFQs tab</strong></li><li>Click <strong>New RFQ</strong></li><li>Set a <em>Required By</em> date</li><li>Add the items you need with quantities</li><li>Tick the checkboxes for each supplier to approach</li><li>Click <strong>Create RFQ</strong></li></ul></div>
+    <div class="col-card"><h4>✉️ Send &amp; Wait</h4><ul><li>The RFQ is created as <strong>Draft</strong></li><li>Contact suppliers by WhatsApp or email as usual</li><li>Click <strong>Send</strong> to mark it as sent in the system</li><li>Wait for suppliers to reply with prices</li></ul></div>
+  </div>
+  <div class="two-col">
+    <div class="col-card"><h4>📝 Enter Quotes</h4><ul><li>Click the <strong>RFQ number</strong> to expand it</li><li>Find the supplier card at the bottom</li><li>Click <strong>Enter Quote</strong></li><li>Type in their <strong>unit price</strong> per item — totals auto-calculate</li><li>Add notes if any, then <strong>Save Quote</strong></li><li>Repeat for each supplier that responds</li></ul></div>
+    <div class="col-card"><h4>⭐ Compare &amp; Convert</h4><ul><li>Expand the RFQ to see the <strong>comparison table</strong></li><li>All supplier prices shown side by side</li><li>Lowest total highlighted in green with a <strong>★</strong></li><li>On the best supplier's card, click <strong>→ PO</strong></li><li>A Create PO modal opens pre-filled — confirm to create</li></ul></div>
+  </div>
+
+  <div class="info-box green" style="margin-top:18px;">
+    <div class="icon">💡</div>
+    <div class="info-box-text"><strong>RFQ vs. Direct PO</strong><p>Use <strong>RFQ</strong> when sourcing new items or prices are variable. Use a <strong>Direct PO</strong> for regular trusted suppliers with fixed agreed prices.</p></div>
+  </div>
+</div>
+
+<!-- ════════════ STEP 5 ════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-logo"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="df-5" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#df-5)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg><div class="page-header-logo-text">Dishflow</div></div>
+    <div class="page-header-label">Procurement Guide</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div class="section-title"><h2>Use Templates for Recurring Orders</h2><p>Purchases → Templates tab</p></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="step-icon">➊</div><div class="step-content"><h4>Go to Purchases → Templates</h4><p>Click the <strong>Templates</strong> tab inside Purchases.</p></div></div>
+    <div class="step"><div class="step-icon">➋</div><div class="step-content"><h4>Click "New Template"</h4><p>Give it a clear name like <em>"Weekly Produce Order"</em> or <em>"Monthly Cleaning Supplies"</em>.</p></div></div>
+    <div class="step"><div class="step-icon">➌</div><div class="step-content"><h4>Set a Default Supplier (optional)</h4><p>If you always order this from the same vendor, select them — it will pre-fill when using the template.</p></div></div>
+    <div class="step"><div class="step-icon">➍</div><div class="step-content"><h4>Add items with default quantities &amp; costs</h4><p>Link to inventory items where possible. Set the typical order quantity and current cost per unit.</p></div></div>
+    <div class="step"><div class="step-icon">➎</div><div class="step-content"><h4>Save &amp; Use it</h4><p>Click <strong>Save Template</strong>. Next time you need to reorder, click <strong>Use Template</strong> — a PO modal opens pre-filled. Adjust quantities if needed and create.</p></div></div>
+  </div>
+
+  <div class="info-box orange" style="margin-top:20px;">
+    <div class="icon">🚀</div>
+    <div class="info-box-text"><strong>Recommended Templates to Set Up</strong><p>Weekly produce · Weekly meat &amp; poultry · Bi-weekly dairy · Monthly dry goods · Monthly packaging. Once done, restocking is a 10-second task every week.</p></div>
+  </div>
+</div>
+
+<!-- ════════════ STEP 6 ════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-logo"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="df-6" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#df-6)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg><div class="page-header-logo-text">Dishflow</div></div>
+    <div class="page-header-label">Procurement Guide</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div class="section-title"><h2>Receiving a Delivery</h2><p>Purchases → Purchase Orders — Do this every time goods arrive</p></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="step-icon">➊</div><div class="step-content"><h4>Go to Purchase Orders</h4><p>Find the PO for this delivery. It should be in <strong>Draft</strong> or <strong>Sent</strong> status.</p></div></div>
+    <div class="step"><div class="step-icon">➋</div><div class="step-content"><h4>Click "Receive"</h4><p>The green Receive button appears on any Draft or Sent PO.</p></div></div>
+    <div class="step"><div class="step-icon">➌</div><div class="step-content"><h4>Review the confirmation screen</h4><p>Items shown in <strong>green</strong> are linked to inventory and will auto-update. Items in <strong>grey</strong> are custom and won't affect any stock count.</p></div></div>
+    <div class="step"><div class="step-icon">➍</div><div class="step-content"><h4>Click "Confirm Received"</h4><p>Stock updates instantly. PO status changes to <strong>Received</strong>. Spend is recorded in Reports.</p></div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="info-box green" style="margin-top:0;"><div class="icon">✅</div><div class="info-box-text"><strong>Green items (Linked)</strong><p>Stock count increases automatically. Check Inventory to see the new balance.</p></div></div>
+    <div class="info-box blue" style="margin-top:0;"><div class="icon">ℹ️</div><div class="info-box-text"><strong>Grey items (Custom)</strong><p>One-off items not in inventory. No stock count changes — record manually if needed.</p></div></div>
+  </div>
+
+  <div class="info-box orange">
+    <div class="icon">⚠️</div>
+    <div class="info-box-text"><strong>Important</strong><p>Only confirm when goods have physically arrived and been checked. This cannot be undone. For short deliveries or damaged goods, adjust stock manually in Inventory afterwards.</p></div>
+  </div>
+</div>
+
+<!-- ════════════ STEP 7 ════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-logo"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="df-7" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#df-7)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg><div class="page-header-logo-text">Dishflow</div></div>
+    <div class="page-header-label">Procurement Guide</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div class="section-title"><h2>Monitor Inventory &amp; Low Stock Alerts</h2><p>Sidebar → Inventory — Check this daily</p></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="step-icon">🔔</div><div class="step-content"><h4>Check the Alert Banner</h4><p>When any item falls below its threshold, a red/amber banner appears at the top of Inventory showing how many items need attention. Check this every morning.</p></div></div>
+    <div class="step"><div class="step-icon">🔍</div><div class="step-content"><h4>Use Filter Tabs to narrow down</h4><p>Click <strong>Low Stock</strong> or <strong>Out of Stock</strong> tabs to see only the items that need ordering. Also filter by category.</p></div></div>
+    <div class="step"><div class="step-icon">➕</div><div class="step-content"><h4>Adjust Stock Manually if needed</h4><p>Click the <strong>+/-</strong> icon on any item to add or remove stock for waste, spillage, spoilage, or manual counts.</p></div></div>
+  </div>
+
+  <div class="divider"></div>
+  <p style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px;">Stock Status Colours</p>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <div style="flex:1; background:#f0fff6; border:1px solid #b8f0d2; border-radius:10px; padding:14px; text-align:center;"><div style="width:40px; height:8px; background:#22c55e; border-radius:4px; margin:0 auto 8px;"></div><span class="badge badge-green">OK</span><p style="font-size:11px; color:#555; margin-top:6px;">Above the alert threshold</p></div>
+    <div style="flex:1; background:#fffbf0; border:1px solid #fde68a; border-radius:10px; padding:14px; text-align:center;"><div style="width:40px; height:8px; background:#f59e0b; border-radius:4px; margin:0 auto 8px;"></div><span class="badge badge-orange">Low</span><p style="font-size:11px; color:#555; margin-top:6px;">Below threshold — order soon</p></div>
+    <div style="flex:1; background:#fff0f0; border:1px solid #fecaca; border-radius:10px; padding:14px; text-align:center;"><div style="width:40px; height:8px; background:#ef4444; border-radius:4px; margin:0 auto 8px;"></div><span class="badge badge-red">Out</span><p style="font-size:11px; color:#555; margin-top:6px;">Zero stock — order immediately</p></div>
+  </div>
+
+  <div class="info-box blue" style="margin-top:18px;">
+    <div class="icon">💡</div>
+    <div class="info-box-text"><strong>Setting Good Alert Thresholds</strong><p>Alert Below = 2–3 days of normal usage. If you use 5 kg of chicken daily, set the alert to 15 kg — enough time to place and receive an order before running out.</p></div>
+  </div>
+</div>
+
+<!-- ════════════ STEP 8 ════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-logo"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="df-8" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#df-8)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg><div class="page-header-logo-text">Dishflow</div></div>
+    <div class="page-header-label">Procurement Guide</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-num">8</div>
+    <div class="section-title"><h2>View in Reports</h2><p>Sidebar → Reports — See the full financial picture</p></div>
+  </div>
+
+  <div class="two-col" style="margin-top:0;">
+    <div class="col-card"><h4>📊 Key Numbers to Watch</h4><ul><li><strong>Gross Revenue</strong> — total sales before discounts</li><li><strong>Net Revenue</strong> — after discounts and VAT</li><li><strong>Total Expenses</strong> — all logged costs</li><li><strong>Net Profit</strong> = Net Revenue minus Total Expenses</li></ul></div>
+    <div class="col-card"><h4>📦 Inventory Snapshot</h4><ul><li>Scroll to the bottom of Reports</li><li>Shows current stock status at a glance</li><li>Red/amber items have a <strong>Create PO</strong> shortcut link</li><li>Good for a quick morning check</li></ul></div>
+  </div>
+
+  <div class="divider"></div>
+  <p style="font-size:12px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px;">How to Log a Manual Expense</p>
+  <div class="steps">
+    <div class="step"><div class="step-icon">➊</div><div class="step-content"><h4>Scroll to the Expenses section in Reports</h4><p>Towards the bottom of the Reports page.</p></div></div>
+    <div class="step"><div class="step-icon">➋</div><div class="step-content"><h4>Click "+ Add Expense"</h4><p>Use for costs not from a PO — rent, utilities, salaries, marketing, etc.</p></div></div>
+    <div class="step"><div class="step-icon">➌</div><div class="step-content"><h4>Fill in Category, Date, Amount, Description</h4><p>Categories: Food &amp; Beverage, Utilities, Rent, Labour, Marketing, Maintenance, Other.</p></div></div>
+    <div class="step"><div class="step-icon">➍</div><div class="step-content"><h4>Click Save</h4><p>The expense reduces your Net Profit immediately.</p></div></div>
+  </div>
+</div>
+
+<!-- ════════════ REFERENCE ════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-logo"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="df-r" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#df-r)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg><div class="page-header-logo-text">Dishflow</div></div>
+    <div class="page-header-label">Procurement Guide</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-num">✦</div>
+    <div class="section-title"><h2>Status Reference &amp; Tips</h2><p>Quick reference for daily use</p></div>
+  </div>
+
+  <div class="two-col" style="margin-top:0;">
+    <div>
+      <p style="font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">Purchase Order Statuses</p>
+      <table>
+        <thead><tr><th>Status</th><th>Meaning</th><th>Next Action</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-grey">Draft</span></td><td>Created, not sent</td><td>Send or Cancel</td></tr>
+          <tr><td><span class="badge badge-blue">Sent</span></td><td>Sent to supplier</td><td>Receive</td></tr>
+          <tr><td><span class="badge badge-green">Received</span></td><td>Delivered &amp; confirmed</td><td>Complete</td></tr>
+          <tr><td><span class="badge badge-red">Cancelled</span></td><td>Voided</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p style="font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">RFQ Statuses</p>
+      <table>
+        <thead><tr><th>Status</th><th>Meaning</th><th>Next Action</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-grey">Draft</span></td><td>Not yet sent</td><td>Send</td></tr>
+          <tr><td><span class="badge badge-blue">Sent</span></td><td>Sent to suppliers</td><td>Enter quotes</td></tr>
+          <tr><td><span class="badge badge-purple">Quoted</span></td><td>Quotes received</td><td>Compare → PO</td></tr>
+          <tr><td><span class="badge badge-green">Closed</span></td><td>Converted to PO</td><td>Complete</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <p style="font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px;">Tips for Daily Operations</p>
+  <div class="tips-grid">
+    <div class="tip-card"><h4>🌅 Morning Routine (2 min)</h4><p>Open Inventory → check the alert banner. If any items are low or out, go to Purchases and create a PO or use a template.</p></div>
+    <div class="tip-card"><h4>🔗 Always Link to Inventory</h4><p>When creating a PO, always select items from the Inventory dropdown. This is what makes stock auto-update on receive.</p></div>
+    <div class="tip-card"><h4>📋 Templates = Time Saved</h4><p>Set up your top 5 recurring orders as templates. Reordering takes 10 seconds instead of 5 minutes.</p></div>
+    <div class="tip-card"><h4>💰 Log All Expenses</h4><p>For accurate profit figures, log non-PO costs in Reports → Expenses: rent, utilities, staff meals, marketing.</p></div>
+    <div class="tip-card"><h4>⭐ RFQ Every Quarter</h4><p>Even for regular suppliers, run an RFQ quarterly to make sure you're still getting competitive prices.</p></div>
+    <div class="tip-card"><h4>🔢 Realistic Thresholds</h4><p>Alert Below = 2–3 days of usage. Too low and you'll run out. Too high and you'll constantly over-order.</p></div>
+  </div>
+
+  <!-- Footer -->
+  <div style="margin-top:36px; padding:18px 24px; background:#1a1a1a; border-radius:12px; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="rgba(255,255,255,0.15)"/><text x="20" y="27" text-anchor="middle" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-weight="800" font-size="16" letter-spacing="-0.5" fill="white">DF</text><rect x="11" y="30.5" width="18" height="2" rx="1" fill="white" opacity="0.35"/></svg>
+      <div>
+        <p style="color:#fff; font-size:13px; font-weight:800;">Dishflow</p>
+        <p style="color:#666; font-size:10px;">Restaurant Operating System</p>
+      </div>
+    </div>
+    <p style="color:#555; font-size:11px;">Procurement &amp; Inventory Guide · Version 1.0</p>
+  </div>
+</div>
+
+</body>
+</html>
