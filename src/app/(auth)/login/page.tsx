@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,16 @@ import { DishflowLogo } from '@/components/shared/dishflow-logo'
 export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) router.push('/dashboard')
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) router.push('/dashboard')
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
