@@ -56,6 +56,85 @@ export default function SetupPage() {
   // Step 3
   const [vatRate, setVatRate] = useState('5')
 
+  async function seedDemoData(restaurantId: string) {
+    // Copy menu categories from Ember & Oak
+    const { data: demoRestaurant } = await supabase
+      .from('restaurants')
+      .select('id')
+      .eq('name', 'Ember & Oak')
+      .single()
+
+    if (!demoRestaurant) return
+
+    const { data: categories } = await supabase
+      .from('menu_categories')
+      .select('*')
+      .eq('restaurant_id', demoRestaurant.id)
+
+    if (!categories?.length) return
+
+    const categoryIdMap: Record<string, string> = {}
+
+    for (const cat of categories) {
+      const { data: newCat } = await supabase
+        .from('menu_categories')
+        .insert({
+          restaurant_id: restaurantId,
+          name: cat.name,
+          name_ar: cat.name_ar,
+          sort_order: cat.sort_order,
+          is_active: cat.is_active,
+        })
+        .select('id')
+        .single()
+      if (newCat) categoryIdMap[cat.id] = newCat.id
+    }
+
+    // Copy menu items
+    const { data: items } = await supabase
+      .from('menu_items')
+      .select('*')
+      .eq('restaurant_id', demoRestaurant.id)
+
+    if (items?.length) {
+      const newItems = items.map(item => ({
+        restaurant_id: restaurantId,
+        category_id: categoryIdMap[item.category_id] ?? null,
+        name: item.name,
+        name_ar: item.name_ar,
+        description: item.description,
+        description_ar: item.description_ar,
+        price: item.price,
+        image_url: item.image_url,
+        is_active: item.is_active,
+        sort_order: item.sort_order,
+      }))
+      await supabase.from('menu_items').insert(newItems)
+    }
+
+    // Seed tables
+    const tables = [
+      { table_number: 'T1', capacity: 2, shape: 'round', pos_x: 64, pos_y: 14 },
+      { table_number: 'T2', capacity: 2, shape: 'round', pos_x: 64, pos_y: 36 },
+      { table_number: 'T3', capacity: 4, shape: 'round', pos_x: 22, pos_y: 14 },
+      { table_number: 'T4', capacity: 4, shape: 'round', pos_x: 36, pos_y: 14 },
+      { table_number: 'T5', capacity: 4, shape: 'round', pos_x: 50, pos_y: 14 },
+      { table_number: 'T6', capacity: 4, shape: 'rect', pos_x: 22, pos_y: 38 },
+      { table_number: 'T7', capacity: 4, shape: 'rect', pos_x: 40, pos_y: 38 },
+      { table_number: 'T8', capacity: 8, shape: 'rect-large', pos_x: 28, pos_y: 62 },
+      { table_number: 'T9', capacity: 2, shape: 'round', pos_x: 64, pos_y: 58 },
+      { table_number: 'T10', capacity: 4, shape: 'round', pos_x: 50, pos_y: 58 },
+      { table_number: 'Bar 1', capacity: 1, shape: 'round', pos_x: 78, pos_y: 10 },
+      { table_number: 'Bar 2', capacity: 1, shape: 'round', pos_x: 87, pos_y: 10 },
+      { table_number: 'VIP', capacity: 10, shape: 'rect-large', pos_x: 78, pos_y: 42 },
+      { table_number: 'Terrace 1', capacity: 4, shape: 'rect', pos_x: 22, pos_y: 84 },
+      { table_number: 'Terrace 2', capacity: 4, shape: 'rect', pos_x: 44, pos_y: 84 },
+    ]
+    await supabase.from('restaurant_tables').insert(
+      tables.map(t => ({ ...t, restaurant_id: restaurantId, status: 'available' }))
+    )
+  }
+
   async function handleLaunch() {
     setLoading(true)
     setError('')
@@ -114,6 +193,9 @@ export default function SetupPage() {
           .update({ restaurant_id: restaurant.id })
           .eq('auth_id', user.id)
       }
+
+      // Seed demo data (tables + full menu from Ember & Oak)
+      await seedDemoData(restaurant.id)
 
       setLaunching(true)
       setTimeout(() => router.push('/dashboard'), 2000)
