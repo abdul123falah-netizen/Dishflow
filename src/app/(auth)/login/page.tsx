@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Sparkles } from 'lucide-react'
 import { DishflowLogo } from '@/components/shared/dishflow-logo'
 
 export default function LoginPage() {
@@ -18,10 +18,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.push('/dashboard')
+      if (session) window.location.replace('/dashboard')
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) router.push('/dashboard')
+      if (session) window.location.replace('/dashboard')
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -54,19 +54,33 @@ export default function LoginPage() {
     setDemoLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: 'demo@dishflow.app',
-      password: 'Demo1234!',
-    })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: 'demo@dishflow.app',
+        password: 'Demo1234!',
+      })
 
-    if (error) {
+      if (error) throw error
+
+      // Force hard redirect — most reliable way to flush auth state
+      window.location.replace('/dashboard')
+    } catch {
       setError('Demo login failed. Please try again.')
       setDemoLoading(false)
-      return
     }
+  }
 
-    router.push('/dashboard')
-    router.refresh()
+  if (demoLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-white gap-6">
+        <DishflowLogo size={64} />
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold text-[var(--foreground)]">Loading Ember & Oak...</h2>
+          <p className="text-[var(--muted-foreground)]">Preparing your demo experience</p>
+        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
+      </div>
+    )
   }
 
   return (
@@ -150,15 +164,12 @@ export default function LoginPage() {
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full gap-2"
             onClick={handleDemoLogin}
             disabled={demoLoading}
           >
-            {demoLoading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Loading demo...</>
-            ) : (
-              '✨ Try Demo — Ember & Oak'
-            )}
+            <Sparkles className="h-4 w-4 text-orange-400" />
+            Try Demo — Ember & Oak
           </Button>
         </CardContent>
       </Card>
