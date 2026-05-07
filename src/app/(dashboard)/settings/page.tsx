@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Plus, Trash2, Check, Loader2, Copy, ExternalLink, Bike } from 'lucide-react'
+import { Plus, Trash2, Check, Loader2, Copy, ExternalLink, Bike, Lock } from 'lucide-react'
 import { useRestaurant } from '@/lib/context/restaurant-context'
+import { createClient } from '@/lib/supabase/client'
 import { useTables, useAddTable, useRemoveTable, useStaff, useUpdateStaff, useCreateStaff, useUpdateRestaurant } from '@/lib/hooks/use-settings'
 import { useIntegrations, useSaveIntegration } from '@/lib/hooks/use-integrations'
 import type { User } from '@/types'
@@ -25,7 +26,7 @@ const COUNTRIES = ['UAE', 'Saudi Arabia', 'Qatar', 'Oman']
 const ROLES = ['owner', 'manager', 'cashier', 'kitchen'] as const
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'restaurant' | 'tables' | 'staff' | 'integrations'>('restaurant')
+  const [activeTab, setActiveTab] = useState<'restaurant' | 'tables' | 'staff' | 'integrations' | 'security'>('restaurant')
   const [saved, setSaved] = useState(false)
 
   const { restaurant, refetch } = useRestaurant()
@@ -129,11 +130,32 @@ export default function SettingsPage() {
     setStaffForm({ full_name: '', email: '', role: 'cashier' })
   }
 
+  // Password change
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordMsg, setPasswordMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+
+  async function handleChangePassword() {
+    if (newPassword.length < 6) { setPasswordMsg({ type: 'error', text: 'Password must be at least 6 characters' }); return }
+    if (newPassword !== confirmPassword) { setPasswordMsg({ type: 'error', text: 'Passwords do not match' }); return }
+    setPasswordLoading(true)
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setPasswordLoading(false)
+    if (error) { setPasswordMsg({ type: 'error', text: error.message }); return }
+    setPasswordMsg({ type: 'success', text: 'Password updated successfully!' })
+    setNewPassword('')
+    setConfirmPassword('')
+    setTimeout(() => setPasswordMsg(null), 3000)
+  }
+
   const TABS = [
     { key: 'restaurant' as const, label: 'Restaurant' },
     { key: 'tables' as const, label: 'Tables' },
     { key: 'staff' as const, label: 'Staff' },
     { key: 'integrations' as const, label: 'Integrations' },
+    { key: 'security' as const, label: 'Security' },
   ]
 
   return (
@@ -435,6 +457,32 @@ export default function SettingsPage() {
                 )}
                 <Button variant="outline" className="w-full" size="sm" onClick={() => setShowAddStaff(true)}>
                   <Plus className="h-4 w-4 mr-1" />Add Staff Member
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === 'security' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Lock className="h-4 w-4" />Change Password</CardTitle>
+                <CardDescription>Update your account password</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {passwordMsg && (
+                  <div className={`rounded-md px-4 py-3 text-sm ${passwordMsg.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                    {passwordMsg.text}
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label>New Password</Label>
+                  <Input type="password" placeholder="Min. 6 characters" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Confirm Password</Label>
+                  <Input type="password" placeholder="Repeat new password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                </div>
+                <Button onClick={handleChangePassword} disabled={passwordLoading || !newPassword || !confirmPassword} className="w-full">
+                  {passwordLoading ? <><Loader2 className="h-4 w-4 animate-spin mr-1" />Updating...</> : 'Update Password'}
                 </Button>
               </CardContent>
             </Card>
