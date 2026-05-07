@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Plus, Trash2, Check, Loader2, Copy, ExternalLink, Bike, Lock } from 'lucide-react'
+import { Plus, Trash2, Check, Loader2, Copy, ExternalLink, Bike, Lock, Printer, Wifi } from 'lucide-react'
+import { fetchPrintNodePrinters, printReceipt, type PrintNodePrinter } from '@/lib/printnode'
 import { useRestaurant } from '@/lib/context/restaurant-context'
 import { createClient } from '@/lib/supabase/client'
 import { useTables, useAddTable, useRemoveTable, useStaff, useUpdateStaff, useCreateStaff, useUpdateRestaurant } from '@/lib/hooks/use-settings'
@@ -26,7 +27,7 @@ const COUNTRIES = ['UAE', 'Saudi Arabia', 'Qatar', 'Oman']
 const ROLES = ['owner', 'manager', 'cashier', 'kitchen'] as const
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'restaurant' | 'tables' | 'staff' | 'integrations' | 'security'>('restaurant')
+  const [activeTab, setActiveTab] = useState<'restaurant' | 'tables' | 'staff' | 'printing' | 'integrations' | 'security'>('restaurant')
   const [saved, setSaved] = useState(false)
 
   const { restaurant, refetch } = useRestaurant()
@@ -150,10 +151,67 @@ export default function SettingsPage() {
     setTimeout(() => setPasswordMsg(null), 3000)
   }
 
+  // PrintNode
+  const [printApiKey, setPrintApiKey] = useState('')
+  const [printPrinterId, setPrintPrinterId] = useState<number | null>(null)
+  const [printers, setPrinters] = useState<PrintNodePrinter[]>([])
+  const [printersLoading, setPrintersLoading] = useState(false)
+  const [printersError, setPrintersError] = useState('')
+  const [printSaved, setPrintSaved] = useState(false)
+  const [testPrinting, setTestPrinting] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('printnode_api_key')
+    const savedPrinter = localStorage.getItem('printnode_printer_id')
+    if (saved) setPrintApiKey(saved)
+    if (savedPrinter) setPrintPrinterId(Number(savedPrinter))
+  }, [])
+
+  async function handleFetchPrinters() {
+    if (!printApiKey.trim()) return
+    setPrintersLoading(true)
+    setPrintersError('')
+    try {
+      const list = await fetchPrintNodePrinters(printApiKey)
+      setPrinters(list)
+    } catch {
+      setPrintersError('Could not connect. Check your API key.')
+    } finally {
+      setPrintersLoading(false)
+    }
+  }
+
+  function handleSavePrintSettings() {
+    localStorage.setItem('printnode_api_key', printApiKey)
+    if (printPrinterId) localStorage.setItem('printnode_printer_id', String(printPrinterId))
+    setPrintSaved(true)
+    setTimeout(() => setPrintSaved(false), 2000)
+  }
+
+  async function handleTestPrint() {
+    if (!printApiKey || !printPrinterId) return
+    setTestPrinting(true)
+    try {
+      const html = `<html><body style="font-family:monospace;width:280px;padding:16px">
+        <h2 style="text-align:center">${restaurant?.name ?? 'My Restaurant'}</h2>
+        <p style="text-align:center">--- TEST PRINT ---</p>
+        <p style="text-align:center">Dishflow POS is connected!</p>
+        <p style="text-align:center">${new Date().toLocaleString()}</p>
+      </body></html>`
+      await printReceipt(printApiKey, printPrinterId, html, 'Test Print')
+      alert('Test print sent successfully!')
+    } catch (e: unknown) {
+      alert('Print failed: ' + (e instanceof Error ? e.message : 'Unknown error'))
+    } finally {
+      setTestPrinting(false)
+    }
+  }
+
   const TABS = [
     { key: 'restaurant' as const, label: 'Restaurant' },
     { key: 'tables' as const, label: 'Tables' },
     { key: 'staff' as const, label: 'Staff' },
+    { key: 'printing' as const, label: 'Printing' },
     { key: 'integrations' as const, label: 'Integrations' },
     { key: 'security' as const, label: 'Security' },
   ]
@@ -300,6 +358,97 @@ export default function SettingsPage() {
                 <p className="text-xs text-[var(--muted-foreground)]">{tables.length} tables configured</p>
               </CardContent>
             </Card>
+          )}
+
+          {activeTab === 'printing' && (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Printer className="h-4 w-4" />Receipt Printer</CardTitle>
+                  <CardDescription>Connect a thermal receipt printer via PrintNode for silent printing — no browser dialog</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+
+                  {/* How it works */}
+                  <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 space-y-2">
+                    <p className="text-xs font-semibold text-blue-800 flex items-center gap-1.5"><Wifi className="h-3.5 w-3.5" />How it works</p>
+                    <ol className="list-decimal list-inside text-xs text-blue-700 space-y-1">
+                      <li>Sign up at <strong>printnode.com</strong> (free plan available)</li>
+                      <li>Download the PrintNode client on the PC/Mac connected to your printer</li>
+                      <li>Copy your API key from the PrintNode dashboard</li>
+                      <li>Paste it below, click "Load Printers", select your printer</li>
+                      <li>Done — receipts print silently with one click, no dialog</li>
+                    </ol>
+                  </div>
+
+                  {/* API Key */}
+                  <div className="space-y-1.5">
+                    <Label>PrintNode API Key</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="Paste your API key from printnode.com"
+                        value={printApiKey}
+                        onChange={e => setPrintApiKey(e.target.value)}
+                      />
+                      <Button variant="outline" onClick={handleFetchPrinters} disabled={printersLoading || !printApiKey}>
+                        {printersLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Load Printers'}
+                      </Button>
+                    </div>
+                    {printersError && <p className="text-xs text-red-500">{printersError}</p>}
+                  </div>
+
+                  {/* Printer selection */}
+                  {printers.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label>Select Printer</Label>
+                      <div className="space-y-2">
+                        {printers.map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => setPrintPrinterId(p.id)}
+                            className={`w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors ${
+                              printPrinterId === p.id
+                                ? 'border-[var(--primary)] bg-orange-50'
+                                : 'border-[var(--border)] hover:bg-slate-50'
+                            }`}
+                          >
+                            <div>
+                              <p className="text-sm font-medium">{p.name}</p>
+                              <p className="text-xs text-[var(--muted-foreground)]">{p.computer.name} · {p.state}</p>
+                            </div>
+                            {printPrinterId === p.id && <Check className="h-4 w-4 text-[var(--primary)]" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cash drawer note */}
+                  <div className="rounded-lg border border-[var(--border)] bg-slate-50 p-3">
+                    <p className="text-xs font-semibold mb-1">Cash Drawer</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      If your cash drawer is connected to the receipt printer via RJ11 cable, it will open automatically when a cash payment receipt is printed.
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex gap-2">
+                    <Button onClick={handleSavePrintSettings} variant={printSaved ? 'success' : 'default'} className="flex-1">
+                      {printSaved ? <><Check className="h-4 w-4 mr-1" />Saved!</> : 'Save Settings'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleTestPrint}
+                      disabled={testPrinting || !printApiKey || !printPrinterId}
+                    >
+                      {testPrinting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Test Print'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {activeTab === 'integrations' && (

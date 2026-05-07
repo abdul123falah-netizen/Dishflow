@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
-import { X, Printer } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { X, Printer, Loader2, Wifi } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { printReceipt } from '@/lib/printnode'
 
 export type ReceiptData = {
   // Restaurant
@@ -204,6 +205,30 @@ interface ReceiptModalProps {
 
 export function ReceiptModal({ data, onClose }: ReceiptModalProps) {
   const printRef = useRef<HTMLDivElement>(null)
+  const [silentPrinting, setSilentPrinting] = useState(false)
+
+  const printNodeKey = typeof window !== 'undefined' ? localStorage.getItem('printnode_api_key') : null
+  const printNodePrinterId = typeof window !== 'undefined' ? localStorage.getItem('printnode_printer_id') : null
+  const hasPrintNode = !!(printNodeKey && printNodePrinterId)
+
+  async function handleSilentPrint() {
+    if (!printNodeKey || !printNodePrinterId) return
+    setSilentPrinting(true)
+    try {
+      const content = document.getElementById('receipt-content')
+      if (!content) throw new Error('Receipt content not found')
+      const html = `<!DOCTYPE html><html><head><style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: white; }
+        @page { margin: 0; size: 80mm auto; }
+      </style></head><body>${content.outerHTML}</body></html>`
+      await printReceipt(printNodeKey, Number(printNodePrinterId), html, `Receipt ${data.orderNumber}`)
+    } catch (e: unknown) {
+      alert('Print failed: ' + (e instanceof Error ? e.message : 'Unknown error'))
+    } finally {
+      setSilentPrinting(false)
+    }
+  }
 
   function handlePrint() {
     const content = document.getElementById('receipt-content')
@@ -276,10 +301,23 @@ export function ReceiptModal({ data, onClose }: ReceiptModalProps) {
             className="flex-1 rounded-xl border border-[var(--border)] py-2.5 text-sm font-semibold hover:bg-slate-50">
             Close
           </button>
-          <button onClick={handlePrint}
-            className="flex-1 rounded-xl bg-[var(--primary)] py-2.5 text-sm font-bold text-white hover:opacity-90 flex items-center justify-center gap-2">
-            <Printer className="h-4 w-4" /> Print Receipt
-          </button>
+          {hasPrintNode ? (
+            <button
+              onClick={handleSilentPrint}
+              disabled={silentPrinting}
+              className="flex-1 rounded-xl bg-[var(--primary)] py-2.5 text-sm font-bold text-white hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {silentPrinting
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Printing...</>
+                : <><Wifi className="h-4 w-4" /> Silent Print</>
+              }
+            </button>
+          ) : (
+            <button onClick={handlePrint}
+              className="flex-1 rounded-xl bg-[var(--primary)] py-2.5 text-sm font-bold text-white hover:opacity-90 flex items-center justify-center gap-2">
+              <Printer className="h-4 w-4" /> Print Receipt
+            </button>
+          )}
         </div>
       </div>
     </div>
