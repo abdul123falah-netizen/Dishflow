@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { DishflowLogo } from './dishflow-logo'
+import { useRestaurant } from '@/lib/context/restaurant-context'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -31,6 +32,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const { restaurant } = useRestaurant()
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -43,6 +45,14 @@ export function Sidebar() {
       <div className="flex h-16 items-center gap-2 border-b border-[var(--border)] px-4">
         <DishflowLogo variant="full" size={32} />
       </div>
+
+      {/* Restaurant name */}
+      {restaurant && (
+        <div className="px-4 py-3 border-b border-[var(--border)]">
+          <p className="text-xs text-[var(--muted-foreground)]">Restaurant</p>
+          <p className="text-sm font-semibold text-[var(--foreground)] truncate">{restaurant.name}</p>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
