@@ -30,6 +30,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function handleLogin(e: React.FormEvent) {
@@ -42,6 +43,25 @@ export default function LoginPage() {
     if (error) {
       setError(error.message)
       setLoading(false)
+      return
+    }
+
+    router.push('/dashboard')
+    router.refresh()
+  }
+
+  async function handleDemoLogin() {
+    setDemoLoading(true)
+    setError('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: 'demo@dishflow.app',
+      password: 'Demo1234!',
+    })
+
+    if (error) {
+      setError('Demo login failed. Please try again.')
+      setDemoLoading(false)
       return
     }
 
@@ -117,6 +137,29 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-[var(--border)]" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-[var(--card)] px-2 text-[var(--muted-foreground)]">or</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleDemoLogin}
+            disabled={demoLoading}
+          >
+            {demoLoading ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Loading demo...</>
+            ) : (
+              '✨ Try Demo — Ember & Oak'
+            )}
+          </Button>
         </CardContent>
       </Card>
 
