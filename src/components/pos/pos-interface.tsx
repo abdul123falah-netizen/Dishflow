@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { MenuPanel } from './menu-panel'
 import { OrderPanel } from './order-panel'
 import { PaymentModal } from './payment-modal'
@@ -12,7 +13,8 @@ import { useTables } from '@/lib/hooks/use-settings'
 import { useRestaurant } from '@/lib/context/restaurant-context'
 import type { CartItem, MenuItem, OrderType } from '@/types'
 
-export function PosInterface() {
+export function PosInterface({ initialOrderId }: { initialOrderId?: string }) {
+  const supabase = createClient()
   const { restaurant } = useRestaurant()
   const { data: categories = [] } = useMenuCategories()
   const [activeCategoryId, setActiveCategoryId] = useState<string>('')
@@ -34,6 +36,33 @@ export function PosInterface() {
 
   const createOrder = useCreateOrder()
   const recordPayment = useRecordPayment()
+
+  // Load existing order when coming from "Process Payment" button on tables page
+  useEffect(() => {
+    if (!initialOrderId) return
+    async function loadExistingOrder() {
+      const { data: order } = await supabase
+        .from('orders')
+        .select('id, order_type, table_id, subtotal, vat_rate, vat_amount, total_amount, items:order_items(menu_item_id, item_name, item_name_ar, unit_price, quantity, line_total)')
+        .eq('id', initialOrderId!)
+        .single()
+      if (!order) return
+      setOrderType(order.order_type as OrderType)
+      if (order.table_id) setTableId(order.table_id)
+      setCartItems(order.items.map((item: { menu_item_id: string | null; item_name: string; item_name_ar?: string | null; unit_price: number; quantity: number; line_total: number }) => ({
+        menu_item_id: item.menu_item_id ?? '',
+        item_name: item.item_name,
+        item_name_ar: item.item_name_ar ?? undefined,
+        unit_price: Number(item.unit_price),
+        quantity: item.quantity,
+        selected_modifiers: [],
+        line_total: Number(item.line_total),
+      })))
+      setLastOrderId(order.id)
+      setShowPayment(true)
+    }
+    loadExistingOrder()
+  }, [initialOrderId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Set default table once loaded
   if (tables.length > 0 && !tableId) {

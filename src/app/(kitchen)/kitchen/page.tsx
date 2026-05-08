@@ -114,7 +114,7 @@ function OrderCard({
   onAdvance: (id: string, next: typeof col.next) => void
   advancing: boolean
 }) {
-  const isUrgent = (Date.now() - new Date(order.created_at).getTime()) > 10 * 60 * 1000
+  const isUrgent = (now - new Date(order.created_at).getTime()) > 10 * 60 * 1000
 
   return (
     <div className={`flex flex-col rounded-xl border bg-slate-800 ring-1 transition-shadow
