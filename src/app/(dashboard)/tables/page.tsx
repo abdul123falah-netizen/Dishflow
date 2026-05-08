@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import {
   Users, Clock, Pencil, Check, X, MonitorSmartphone,
-  Receipt, Loader2, UtensilsCrossed, ChevronRight
+  Receipt, Loader2, UtensilsCrossed, ChevronRight, CreditCard
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { useRestaurant } from '@/lib/context/restaurant-context'
@@ -291,6 +291,14 @@ function TableDetail({ table, onClose, currency }: { table: FloorTable; onClose:
 
           {/* Actions */}
           <div className="px-5 pb-5 space-y-2">
+            {order.payment_status !== 'paid' && (
+              <button
+                onClick={() => router.push(`/pos?order=${order.id}`)}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity"
+              >
+                <CreditCard className="h-4 w-4" /> Process Payment
+              </button>
+            )}
             <button
               onClick={() => router.push('/orders')}
               className="w-full flex items-center justify-center gap-2 rounded-xl border border-[var(--border)] py-2.5 text-sm font-semibold text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors"

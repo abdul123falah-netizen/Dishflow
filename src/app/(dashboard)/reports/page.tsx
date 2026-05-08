@@ -17,12 +17,13 @@ import { useInventoryItems, stockStatus } from '@/lib/hooks/use-inventory'
 import { useRestaurant } from '@/lib/context/restaurant-context'
 import Link from 'next/link'
 
-type Period = 'today' | 'week' | 'month' | 'last_month'
+type Period = 'today' | 'week' | 'month' | 'last_month' | 'custom'
 const PERIODS: { value: Period; label: string }[] = [
   { value: 'today',      label: 'Today' },
   { value: 'week',       label: 'This Week' },
   { value: 'month',      label: 'This Month' },
   { value: 'last_month', label: 'Last Month' },
+  { value: 'custom',     label: 'Custom Range' },
 ]
 
 const EXPENSE_CATEGORIES = [
@@ -180,12 +181,22 @@ function AddExpenseModal({ onClose, currency }: { onClose: () => void; currency:
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ReportsPage() {
   const [period, setPeriod] = useState<Period>('month')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+  const [itemSearch, setItemSearch] = useState('')
   const [showAddExpense, setShowAddExpense] = useState(false)
-  const { data, isLoading } = useReportsData(period)
+  const { data, isLoading } = useReportsData(period, customFrom, customTo)
   const { data: inventoryItems = [] } = useInventoryItems()
   const deleteExpense = useDeleteExpense()
   const { restaurant } = useRestaurant()
   const currency = restaurant?.currency ?? 'AED'
+
+  const periodLabel = period === 'today' ? 'Today'
+    : period === 'week' ? 'This Week'
+    : period === 'month' ? 'This Month'
+    : period === 'last_month' ? 'Last Month'
+    : customFrom && customTo ? `${customFrom} → ${customTo}`
+    : 'Custom Range'
 
   const lowStockItems  = inventoryItems.filter(i => stockStatus(i) === 'low')
   const outStockItems  = inventoryItems.filter(i => stockStatus(i) === 'out')
@@ -246,20 +257,49 @@ export default function ReportsPage() {
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
 
         {/* Period Filter */}
-        <div className="flex gap-2 flex-wrap">
-          {PERIODS.map(p => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                period === p.value
-                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                  : 'border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)]'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="space-y-3">
+          <div className="flex gap-2 flex-wrap">
+            {PERIODS.map(p => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  period === p.value
+                    ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                    : 'border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)]'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {period === 'custom' && (
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-semibold text-[var(--muted-foreground)]">From</label>
+                <input
+                  type="date"
+                  value={customFrom}
+                  onChange={e => setCustomFrom(e.target.value)}
+                  className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-semibold text-[var(--muted-foreground)]">To</label>
+                <input
+                  type="date"
+                  value={customTo}
+                  onChange={e => setCustomTo(e.target.value)}
+                  className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                />
+              </div>
+              {customFrom && customTo && (
+                <span className="text-xs text-[var(--primary)] font-semibold bg-orange-50 border border-orange-200 rounded-full px-3 py-1">
+                  Showing: {customFrom} → {customTo}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -398,40 +438,59 @@ export default function ReportsPage() {
 
                 {/* Top Items */}
                 <div className="rounded-xl border border-[var(--border)] bg-white overflow-hidden">
-                  <div className="px-5 py-4 border-b border-[var(--border)]">
-                    <p className="text-sm font-bold">Top Selling Items</p>
+                  <div className="px-5 py-4 border-b border-[var(--border)] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold">Top Selling Items</p>
+                        <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{periodLabel}</p>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search items..."
+                      value={itemSearch}
+                      onChange={e => setItemSearch(e.target.value)}
+                      className="w-full rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                    />
                   </div>
                   {data && data.topItems.length > 0 ? (
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-[var(--border)] bg-slate-50">
-                          <th className="px-4 py-2 text-left text-xs font-semibold text-[var(--muted-foreground)]">Item</th>
-                          <th className="px-4 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">Qty</th>
-                          <th className="px-4 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">Revenue</th>
-                          <th className="px-4 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">%</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[var(--border)]">
-                        {data.topItems.map((item, i) => {
-                          const pct = data.gross_revenue > 0 ? Math.round((item.revenue / data.gross_revenue) * 100) : 0
-                          return (
-                            <tr key={item.name} className="hover:bg-slate-50">
-                              <td className="px-4 py-2.5">
-                                <span className="text-[10px] text-[var(--muted-foreground)] font-mono mr-2">{i + 1}</span>
-                                {item.name}
-                              </td>
-                              <td className="px-4 py-2.5 text-right text-[var(--muted-foreground)]">{item.qty}</td>
-                              <td className="px-4 py-2.5 text-right font-semibold">{formatCurrency(item.revenue, currency)}</td>
-                              <td className="px-4 py-2.5 text-right">
-                                <span className="text-xs bg-orange-50 text-[var(--primary)] font-bold px-1.5 py-0.5 rounded">
-                                  {pct}%
-                                </span>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+                    <>
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[var(--border)] bg-slate-50">
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-[var(--muted-foreground)]">Item</th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">Qty</th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">Revenue</th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">%</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--border)]">
+                          {data.topItems
+                            .filter(item => item.name.toLowerCase().includes(itemSearch.toLowerCase()))
+                            .map((item, i) => {
+                              const pct = data.gross_revenue > 0 ? Math.round((item.revenue / data.gross_revenue) * 100) : 0
+                              return (
+                                <tr key={item.name} className="hover:bg-slate-50">
+                                  <td className="px-4 py-2.5">
+                                    <span className="text-[10px] text-[var(--muted-foreground)] font-mono mr-2">{i + 1}</span>
+                                    {item.name}
+                                  </td>
+                                  <td className="px-4 py-2.5 text-right text-[var(--muted-foreground)]">{item.qty}</td>
+                                  <td className="px-4 py-2.5 text-right font-semibold">{formatCurrency(item.revenue, currency)}</td>
+                                  <td className="px-4 py-2.5 text-right">
+                                    <span className="text-xs bg-orange-50 text-[var(--primary)] font-bold px-1.5 py-0.5 rounded">
+                                      {pct}%
+                                    </span>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                        </tbody>
+                      </table>
+                      {data.topItems.filter(item => item.name.toLowerCase().includes(itemSearch.toLowerCase())).length === 0 && (
+                        <p className="p-4 text-center text-xs text-[var(--muted-foreground)]">No items match &quot;{itemSearch}&quot;</p>
+                      )}
+                    </>
                   ) : (
                     <p className="p-6 text-center text-sm text-[var(--muted-foreground)]">No sales data yet</p>
                   )}
